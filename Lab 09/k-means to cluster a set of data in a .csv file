@@ -1,0 +1,48 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from google.colab import files
+uploaded = files.upload()
+filename = list(uploaded.keys())[0]
+if filename.endswith(".xlsx") or filename.endswith(".xls"):
+    df = pd.read_excel(filename)
+else:
+    df = pd.read_csv(filename)
+print("File loaded:", filename)
+print(df.head())
+df_numeric = df.select_dtypes(include="number")
+print("\nUsing these columns for clustering:", list(df_numeric.columns))
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(df_numeric)
+inertia = []
+k_range = range(1, 11)
+for k in k_range:
+    km = KMeans(n_clusters=k, random_state=42, n_init=10)
+    km.fit(X_scaled)
+    inertia.append(km.inertia_)
+plt.figure(figsize=(7, 4))
+plt.plot(k_range, inertia, marker="o")
+plt.title("Elbow Method - Find Best K")
+plt.xlabel("Number of Clusters (K)")
+plt.ylabel("Inertia")
+plt.tight_layout()
+plt.show()
+model = KMeans(n_clusters=k, random_state=42, n_init=10)
+df["Cluster"] = model.fit_predict(X_scaled)
+print(f"\nClusters assigned (K={k}):")
+print(df["Cluster"].value_counts())
+col1 = df_numeric.columns[0]
+col2 = df_numeric.columns[1]
+plt.figure(figsize=(7, 5))
+for cluster in range(k):
+    subset = df[df["Cluster"] == cluster]
+    plt.scatter(subset[col1], subset[col2], label=f"Cluster {cluster}")
+plt.title(f"K-Means Clustering (K={k})")
+plt.xlabel(col1)
+plt.ylabel(col2)
+plt.legend()
+plt.tight_layout()
+plt.show()
+print("\nDone! Cluster column added to dataset.")
+print(df.head())
