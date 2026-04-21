@@ -1,0 +1,53 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from google.colab import files
+uploaded = files.upload()
+
+filename = list(uploaded.keys())[0]
+
+if filename.endswith(".xlsx") or filename.endswith(".xls"):
+    df = pd.read_excel(filename)
+else:
+    df = pd.read_csv(filename)
+
+print("File loaded:", filename)
+print(df.head())
+
+df_numeric = df.select_dtypes(include="number")
+print("\nOriginal number of features:", df_numeric.shape[1])
+
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(df_numeric)
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_scaled)
+
+print("Reduced to:", X_pca.shape[1], "components")
+explained = pca.explained_variance_ratio_ * 100
+print(f"\nPC1 explains: {explained[0]:.2f}% of the data")
+print(f"PC2 explains: {explained[1]:.2f}% of the data")
+print(f"Total information kept: {sum(explained):.2f}%")
+pca_full = PCA()
+pca_full.fit(X_scaled)
+cumulative = pca_full.explained_variance_ratio_.cumsum() * 100
+plt.figure(figsize=(7, 4))
+plt.plot(range(1, len(cumulative) + 1), cumulative, marker="o")
+plt.axhline(y=95, color="red", linestyle="--", label="95% threshold")
+plt.title("Cumulative Explained Variance")
+plt.xlabel("Number of Components")
+plt.ylabel("Variance Explained (%)")
+plt.legend()
+plt.tight_layout()
+plt.show()
+pca_df = pd.DataFrame(X_pca, columns=["PC1", "PC2"])
+plt.figure(figsize=(7, 5))
+plt.scatter(pca_df["PC1"], pca_df["PC2"], c="steelblue", edgecolors="k", alpha=0.7)
+plt.title("PCA - 2D Projection of Data")
+plt.xlabel(f"PC1 ({explained[0]:.1f}% variance)")
+plt.ylabel(f"PC2 ({explained[1]:.1f}% variance)")
+plt.tight_layout()
+plt.show()
+
+print("\nDone! Data reduced from", df_numeric.shape[1], "features →  2 components")
